@@ -25,7 +25,7 @@ class User(db.Model):
         return check_password_hash(self.password, password)
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return '<User %r>' % self.username        
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
