@@ -25,3 +25,7 @@ types-Flask-SQLAlchemy==2.5.9.4
 types-SQLAlchemy==1.4.53.38
 typing_extensions==4.12.2
 Werkzeug==3.0.3
+psycopg2-binary==2.9.6
+
+
+

@@ -13,7 +13,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Используем переменную окружения DATABASE_URL для подключения к базе данных
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/pro.kent/Documents/GitHub/AzEr/blog.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 
