@@ -12,8 +12,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Используем абсолютный путь к базе данных
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/pro.kent/Documents/GitHub/lilia/blog.db'
+# Используем переменную окружения DATABASE_URL для подключения к базе данных
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 
