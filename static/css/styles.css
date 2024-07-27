@@ -1,0 +1,67 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+.pricing-header {
+    padding: 20px 0;
+}
+
+.card {
+    margin-bottom: 20px;
+}
+
+/* Медиазапросы для адаптивности */
+@media (max-width: 768px) {
+    .pricing-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .pricing-header p {
+        font-size: 1rem;
+    }
+
+    .card-body h1 {
+        font-size: 1.25rem;
+    }
+
+    .card-body ul {
+        padding-left: 0;
+    }
+
+    .card-body ul li {
+        font-size: 0.875rem;
+    }
+
+    .card-body button {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .pricing-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .pricing-header p {
+        font-size: 0.875rem;
+    }
+
+    .card-body h1 {
+        font-size: 1rem;
+    }
+
+    .card-body ul li {
+        font-size: 0.75rem;
+    }
+
+    .card-body button {
+        font-size: 0.75rem;
+    }
+}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}
+Создать статью
+{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="border p-4 rounded" style="background-color: #1e1e1e; color: white; max-width: 600px; margin: 0 auto;">
+        <h1 class="text-center mb-4">Создать статью</h1>
+        <form method="POST" action="/create-article">
+            <div class="form-group">
+                <label for="title">Заголовок</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="intro">Интро</label>
+                <input type="text" class="form-control" id="intro" name="intro" required>
+            </div>
+            <div class="form-group">
+                <label for="text">Текст</label>
+                <textarea class="form-control" id="text" name="text" rows="5" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-warning btn-block">Создать</button>
+        </form>
+        <a href="/" class="btn btn-secondary btn-block mt-3">На главную</a>
+    </div>
+</div>
+
+{% endblock %}
