@@ -1,113 +1,172 @@
 import os
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 from dotenv import load_dotenv
-import sqlite3
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, CallbackContext
 
-# Загружаем переменные из файла .env
+# Загружаем переменные окружения
 load_dotenv()
 
-# Статический токен бота
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', 'your_telegram_bot_token')
+app = Flask(__name__)
 
-# Полный путь к базе данных из переменной окружения
-DB_PATH = os.getenv('DATABASE_URL', 'blog.db').replace('sqlite:///', '')
+# Используем абсолютный путь к базе данных
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/pro.kent/Documents/GitHub/lilia/blog.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 
-# ID вашего чата или пользователя для уведомлений (вместо `YOUR_CHAT_ID`)
-ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', 'YOUR_CHAT_ID')
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
-def check_database_exists(db_path):
-    """ Проверяет, существует ли файл базы данных. """
-    return os.path.isfile(db_path)
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
 
-def initialize_database():
-    """ Инициализирует базу данных, если она существует. """
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+
+    def __repr__(self):
+        return '<User %r>' % self.username        
+
+class Article(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    intro = db.Column(db.String(300), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return '<Article %r>' % self.id
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            flash('Пользователь с таким именем или электронной почтой уже существует.')
+            return redirect(url_for('register'))
+
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Регистрация прошла успешно!')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            flash('Вы вошли в систему!')
+            # Перенаправляем на страницу создания статьи
+            return redirect(url_for('create_article'))
+
+        flash('Неверное имя пользователя или пароль.')
+ 
+    return render_template('login.html')
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    flash('Вы вышли из системы.')
+    return redirect(url_for('home'))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/pro2')
+def pro2():
+    return render_template('pro2.html')
+
+@app.route('/posts')
+def posts():
+    articles = Article.query.order_by(Article.date.desc()).all()
+    return render_template('posts.html', articles=articles)
+
+@app.route('/posts/<int:id>/del')
+@login_required
+def post_delete(id):
+    article = Article.query.get_or_404(id)
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS article (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                intro TEXT NOT NULL,
-                text TEXT NOT NULL,
-                date DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
-    except sqlite3.Error as e:
-        raise RuntimeError(f"Ошибка базы данных: {e}")
-    finally:
-        if 'conn' in locals():
-            conn.close()
+        db.session.delete(article)
+        db.session.commit()
+        return redirect('/posts')
+    except:
+        return "При удалении статьи произошла ошибка"
 
-def get_articles():
-    """ Получает статьи из базы данных. """
-    if not check_database_exists(DB_PATH):
-        return [], "Файл базы данных не найден. Пожалуйста, попробуйте позже."
+@app.route('/posts/<int:id>')
+def post_detail(id):
+    article = Article.query.get_or_404(id)
+    return render_template('post_detail.html', article=article)
 
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT title, intro, text FROM article")
-        articles = cursor.fetchall()
-        return articles, None
-    except sqlite3.Error as e:
-        return [], f"Ошибка базы данных: {e}"
-    finally:
-        conn.close()
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """ Обрабатывает команду /start. """
-    await update.message.reply_text('Привет! Используйте команду /articles, чтобы получить список статей.')
-
-async def articles(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """ Обрабатывает команду /articles. """
-    articles, error_message = get_articles()
-    if error_message:
-        await update.message.reply_text(error_message)
-        notify_admin(error_message)
-    elif articles:
-        for title, intro, text in articles:
-            # Отправка сообщений с использованием Markdown
-            await update.message.reply_text(f'*Заголовок:* {title}\n*Интро:* {intro}\n\n*Текст:* {text}', parse_mode='Markdown')
+@app.route('/posts/<int:id>/update', methods=['POST', 'GET'])
+@login_required
+def post_update(id):
+    article = Article.query.get_or_404(id)
+    if request.method == "POST":
+        article.title = request.form["title"]
+        article.intro = request.form["intro"]
+        article.text = request.form["text"]
+        try:
+            db.session.commit()
+            return redirect("/posts")
+        except:
+            return "При редактировке статьи произошла ошибка"
     else:
-        await update.message.reply_text('Статей пока нет.')
+        return render_template('post_update.html', article=article)
 
-async def error_handler(update: Update, context: CallbackContext) -> None:
-    """ Обрабатывает любые ошибки в боте. """
-    error_message = f"Произошла ошибка: {context.error}"
-    print(error_message)
-    await update.message.reply_text(error_message)
-    notify_admin(error_message)
+@app.route('/create-article', methods=['POST', 'GET'])
+@login_required
+def create_article():
+    if request.method == "POST":
+        title = request.form["title"]
+        intro = request.form["intro"]
+        text = request.form["text"]
 
-def notify_admin(message: str):
-    """ Отправляет уведомление админу в Telegram. """
-    application = Application.builder().token(TOKEN).build()
-    application.bot.send_message(chat_id=ADMIN_CHAT_ID, text=message)
+        article = Article(title=title, intro=intro, text=text)
 
-def main() -> None:
-    """ Основная функция для запуска бота. """
-    try:
-        # Инициализация базы данных
-        initialize_database()
-    except Exception as e:
-        error_message = f"Не удалось инициализировать базу данных: {e}"
-        print(error_message)
-        notify_admin(error_message)
+        try:
+            db.session.add(article)
+            db.session.commit()
+            return redirect("/posts")
+        except Exception as e:
+            print(f"Error adding article: {e}")
+            return "При добавлении статьи произошла ошибка"
+    else:
+        return render_template('create-article.html')
 
-    # Инициализация Application
-    application = Application.builder().token(TOKEN).build()
+@app.route('/db-path')
+def db_path():
+    return f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}"
 
-    # Определение команд
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("articles", articles))
-
-    # Обработчик ошибок
-    application.add_error_handler(error_handler)
-
-    # Запуск бота
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    print(f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    app.run(debug=True, port=5002)

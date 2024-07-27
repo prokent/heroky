@@ -11,7 +11,7 @@ load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', 'your_telegram_bot_token')
 
 # Полный путь к базе данных из переменной окружения
-DB_PATH = os.getenv('DATABASE_URL', 'blog.db').replace('sqlite:///', '')
+DB_PATH = '/Users/pro.kent/Documents/GitHub/lilia/blog.db'
 
 def check_database_exists(db_path):
     """ Проверяет, существует ли файл базы данных. """
