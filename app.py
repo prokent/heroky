@@ -168,5 +168,5 @@ def db_path():
     return f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}"
 
 if __name__ == "__main__":
-    print(f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    app.run(debug=True, port=5002)
+    port = int(os.environ.get("PORT", 5001))  # Используйте другой порт, например 5001
+    app.run(host='0.0.0.0', port=port)
