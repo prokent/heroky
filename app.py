@@ -1,23 +1,14 @@
-import os
-from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from dotenv import load_dotenv
-
-# Загружаем переменные окружения
-load_dotenv()
 
 app = Flask(__name__)
-
-# Используем переменную окружения DATABASE_URL для подключения к базе данных
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/pro.kent/Documents/GitHub/AzEr/blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
-
+app.config['SECRET_KEY'] = 'your_secret_key'  # Добавьте секретный ключ для сессий
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -34,7 +25,7 @@ class User(db.Model):
         return check_password_hash(self.password, password)
 
     def __repr__(self):
-        return '<User %r>' % self.username        
+        return '<User %r>' % self.username
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,8 +68,7 @@ def login():
         if user and user.check_password(password):
             session['user_id'] = user.id
             flash('Вы вошли в систему!')
-            # Перенаправляем на страницу создания статьи
-            return redirect(url_for('create_article'))
+            return redirect(url_for('home'))
 
         flash('Неверное имя пользователя или пароль.')
  
@@ -89,6 +79,7 @@ def logout():
     session.pop('user_id', None)
     flash('Вы вышли из системы.')
     return redirect(url_for('home'))
+
 
 def login_required(f):
     @wraps(f)
@@ -169,5 +160,5 @@ def db_path():
     return f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}"
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))  # Используйте другой порт, например 5001
-    app.run(host='0.0.0.0', port=port)
+    print(f"Путь к базе данных: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    app.run(debug=True, port=5002)
