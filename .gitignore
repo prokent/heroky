@@ -1,10 +1,7 @@
 __pycache__/
-templates/
 *.pyc
 *.pyo
 *.pyd
 .env
 *.db
 *.sqlite3
-.templates
-.tg_bot_sql
