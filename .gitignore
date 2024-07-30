@@ -7,3 +7,4 @@ templates/
 *.db
 *.sqlite3
 .templates
+.tg_bot_sql
